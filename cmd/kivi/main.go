@@ -10,8 +10,15 @@ import (
 )
 
 func main() {
-	s := store.NewMemStore()
+	// s := store.NewMemStore()
+	s, err := store.NewLogStore("kivi.log")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer s.Close()
+
 	h := kivihttp.NewHandler(s)
+
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)
 

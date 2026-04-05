@@ -59,11 +59,6 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 
 	if err := h.store.Delete(key); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-
-	if err := h.store.Delete(key); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
