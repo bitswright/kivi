@@ -11,7 +11,8 @@ import (
 
 func main() {
 	// s := store.NewMemStore()
-	s, err := store.NewLogStore("kivi.log")
+	// s, err := store.NewLogStore("kivi.log")
+	s, err := store.NewWALStore("wal.log")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -25,7 +25,7 @@ func encode(e Entry) []byte {
 	keyLen := uint32(len(keyBytes))
 	valLen := uint32(len(valBytes))
 
-	buf := make([]byte, 1+4+4+keyLen, valLen+4)
+	buf := make([]byte, 1+4+4+keyLen+valLen+4)
 
 	buf[0] = byte(e.Op)
 	binary.LittleEndian.PutUint32(buf[1:5], keyLen)
