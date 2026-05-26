@@ -21,7 +21,7 @@ type MemStore[V any] struct {
 }
 
 // creates and returns an empty MemStore
-func New[V any()]() *MemStore[V] {
+func New[V any]() *MemStore[V] {
 	return &MemStore[V]{
 		data: make(map[string]entry[V]),
 	}
@@ -32,16 +32,16 @@ func (s *MemStore[V]) Set(key string, value V) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	m.data[key] = entry[V]{value: value}
+	s.data[key] = entry[V]{value: value}
 }
 
 // Set stores the given value under given key that expires after ttl duration
-func (s *MemStore[V]) Set(key string, value V, ttl time.Duration) {
+func (s *MemStore[V]) SetWithTTL(key string, value V, ttl time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	m.data[key] = entry[V]{
-		value: value,
+	s.data[key] = entry[V]{
+		value:     value,
 		expiresAt: time.Now().Add(ttl),
 	}
 }
@@ -55,11 +55,18 @@ func (s *MemStore[V]) Get(key string) (V, bool) {
 	e, ok := s.data[key]
 	if !ok || e.isExpired() {
 		var zero V
+		// zero will be initialized with zero-value based on V type
 		return zero, false
 	}
 	return e.value, true
 }
 
+func (s *MemStore[V]) Delete(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.data, key)
+}
 
 // Len returns the number of keys currently in the store,
 // including expired keys not yet reaped.
