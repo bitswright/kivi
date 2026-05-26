@@ -30,7 +30,7 @@ build:
 
 ## test: run all tests (no race detector)
 test:
-	$(GO) tests $(TEST_FLAGS) ./...
+	$(GO) test $(TEST_FLAGS) ./...
 
 ## bench: run all benchmarks, skip unit tests
 bench:
