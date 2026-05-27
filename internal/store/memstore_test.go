@@ -63,8 +63,8 @@ func TestTTLExpiry(t *testing.T) {
 
 func TestConcurrentReadsDoNotBlock(t *testing.T) {
 	m := New[int]()
-	for i := range 100 {
-		m.Set(string(rune('a'+i%26)), i)
+	for i := range 26 {
+		m.Set(string(rune('a'+i)), i)
 	}
 
 	var wg sync.WaitGroup
@@ -77,4 +77,19 @@ func TestConcurrentReadsDoNotBlock(t *testing.T) {
 		}()
 	}
 	wg.Wait() //if this deadlocks, concurrent reads are broken
+}
+
+func TestConcurrentWritesDoNotCorrupt(t *testing.T) {
+	m := New[int]()
+
+	var wg sync.WaitGroup
+	for i := range 100 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m.Set(string(rune('a'+i%26)), i)
+		}()
+	}
+	wg.Wait()
+	// if we get here without panic, map wasn't corrupted
 }
