@@ -1,6 +1,9 @@
 package store
 
 import (
+	"iter"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -70,9 +73,42 @@ func (s *MemStore[V]) Delete(key string) {
 
 // Len returns the number of keys currently in the store,
 // including expired keys not yet reaped.
-func (m *MemStore[V]) Len() int {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (s *MemStore[V]) Len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	return len(m.data)
+	return len(s.data)
+}
+
+func (s *MemStore[V]) Scan(prefix string) iter.Seq2[string, V] {
+	return func(yield func(string, V) bool) {
+		s.mu.RLock()
+		keys := make([]string, 0)
+		for k, e := range s.data {
+			if e.isExpired() {
+				continue
+			}
+			if strings.HasPrefix(k, prefix) {
+				keys = append(keys, k)
+			}
+		}
+		s.mu.RUnlock()
+
+		// no need to keep lock while sorting the keys
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			s.mu.RLock()
+			e, ok := s.data[k]
+			s.mu.RUnlock()
+
+			if !ok || e.isExpired() {
+				continue // key got deleted or expired
+			}
+
+			if !yield(k, e.value) {
+				return // caller broke out of loop early
+			}
+		}
+	}
 }
