@@ -225,3 +225,25 @@ func TestScanExcludesExpired(t *testing.T) {
 		}
 	}
 }
+
+func TestReaperActuallyDeletesFromMap(t *testing.T) {
+	m := New[int](testReaperInterval)
+
+	m.SetWithTTL("key1", 100, 30*time.Millisecond)
+
+	time.Sleep(50 * time.Millisecond)
+	_, ok := m.Get("key1")
+	if ok {
+		t.Fatal("expected key1 to be deleted after reaper ran after 50ms")
+	}
+}
+
+func TestStopIsIdempotent(t *testing.T) {
+	m := New[int](testReaperInterval)
+
+	// calling m.Stop() multiple times,
+	// expectation: should not panic
+	m.Stop()
+	m.Stop()
+	m.Stop()
+}
