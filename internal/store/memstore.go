@@ -19,15 +19,55 @@ func (e entry[V]) isExpired() bool {
 }
 
 type MemStore[V any] struct {
-	mu   sync.RWMutex
-	data map[string]entry[V]
+	mu       sync.RWMutex
+	data     map[string]entry[V]
+	done     chan struct{}
+	stopOnce sync.Once
 }
 
 // creates and returns an empty MemStore
-func New[V any]() *MemStore[V] {
-	return &MemStore[V]{
+func New[V any](reaperInterval time.Duration) *MemStore[V] {
+	s := &MemStore[V]{
 		data: make(map[string]entry[V]),
+		done: make(chan struct{}),
 	}
+	go s.reap(reaperInterval)
+	return s
+}
+
+// reap runs on a ticker and deletes expired keys from the map.
+func (s *MemStore[V]) reap(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.deleteExpired()
+		case <-s.done:
+			return
+		}
+	}
+}
+
+// deleteExpired removes all expired entries under a write lock.
+func (s *MemStore[V]) deleteExpired() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for k, e := range s.data {
+		if e.isExpired() {
+			delete(s.data, k)
+		}
+	}
+}
+
+// Stop shuts down the background reaper goroutine.
+// Safe to call multiple times.
+func (s *MemStore[V]) Stop() {
+	s.stopOnce.Do(func() {
+		close(s.done)
+	})
 }
 
 // Set stores the given value under given key with no expiry

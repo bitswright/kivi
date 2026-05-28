@@ -6,8 +6,11 @@ import (
 	"time"
 )
 
+// helper — reaper interval short enough for tests but not so short it fights the test
+const testReaperInterval = 20 * time.Millisecond
+
 func TestSetAndGet(t *testing.T) {
-	m := New[string]()
+	m := New[string](testReaperInterval)
 
 	m.Set("name", "kivi")
 
@@ -22,7 +25,7 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestGetMissingKey(t *testing.T) {
-	m := New[string]()
+	m := New[string](testReaperInterval)
 
 	_, ok := m.Get("ghost")
 	if ok {
@@ -31,7 +34,7 @@ func TestGetMissingKey(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("version", 4)
 	m.Delete("version")
@@ -43,7 +46,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestTTLExpiry(t *testing.T) {
-	m := New[string]()
+	m := New[string](testReaperInterval)
 
 	m.SetWithTTL("temp", "value", 2*time.Second)
 
@@ -62,7 +65,7 @@ func TestTTLExpiry(t *testing.T) {
 }
 
 func TestConcurrentReadsDoNotBlock(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 	for i := range 26 {
 		m.Set(string(rune('a'+i)), i)
 	}
@@ -80,7 +83,7 @@ func TestConcurrentReadsDoNotBlock(t *testing.T) {
 }
 
 func TestConcurrentWritesDoNotCorrupt(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	var wg sync.WaitGroup
 	for i := range 100 {
@@ -95,7 +98,7 @@ func TestConcurrentWritesDoNotCorrupt(t *testing.T) {
 }
 
 func TestScanPrefix(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("bar", 1)
 	m.Set("foo", 2)
@@ -122,7 +125,7 @@ func TestScanPrefix(t *testing.T) {
 }
 
 func TestScanSorted(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("key:b", 2)
 	m.Set("key:c", 3)
@@ -146,7 +149,7 @@ func TestScanSorted(t *testing.T) {
 }
 
 func TestScanEmptyPrefix(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("a", 1)
 	m.Set("b", 2)
@@ -171,7 +174,7 @@ func TestScanEmptyPrefix(t *testing.T) {
 }
 
 func TestScanEarlyExit(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("a", 1)
 	m.Set("b", 2)
@@ -198,7 +201,7 @@ func TestScanEarlyExit(t *testing.T) {
 }
 
 func TestScanExcludesExpired(t *testing.T) {
-	m := New[int]()
+	m := New[int](testReaperInterval)
 
 	m.Set("a", 1)
 	m.SetWithTTL("b", 2, 1*time.Millisecond)
