@@ -40,6 +40,14 @@ func Open(path string, mode SyncMode) (*LogStore, error) {
 	}, nil
 }
 
+// Append encodes and appends a record to the log.
+func (l *LogStore) Append(rec Record) error {
+	if err := EncodeRecord(l.file, rec); err != nil {
+		return fmt.Errorf("encode record: %w", err)
+	}
+	return l.sync()
+}
+
 func (l *LogStore) sync() error {
 	switch l.syncMode {
 	case SyncNone:
