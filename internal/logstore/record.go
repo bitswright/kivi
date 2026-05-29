@@ -45,8 +45,10 @@ func EncodeRecord(w io.Writer, rec Record) error {
 	header := make([]byte, headerSize)
 	header[0] = byte(rec.Type)
 	binary.LittleEndian.PutUint32(header[1:5], keyLen)
-	binary.LittleEndian.PutUint32(header[6:9], valLen)
+	binary.LittleEndian.PutUint32(header[5:9], valLen)
 	binary.LittleEndian.PutUint32(header[9:13], checksum)
+
+	fmt.Printf("header in encode: %v\n", header)
 
 	if _, err := w.Write(header); err != nil {
 		return fmt.Errorf("write header: %w", err)
@@ -59,8 +61,8 @@ func EncodeRecord(w io.Writer, rec Record) error {
 
 	// write val
 	if len(rec.Value) > 0 {
-		if _, err := w.Write(rec.Key); err != nil {
-			return fmt.Errorf("write key: %w", err)
+		if _, err := w.Write(rec.Value); err != nil {
+			return fmt.Errorf("write value: %w", err)
 		}
 	}
 
@@ -77,10 +79,12 @@ func DecodeRecord(r io.Reader) (Record, error) {
 		// io.EOF here means clean end of file — no more records
 		return Record{}, err
 	}
+	fmt.Printf("header in decode: %v\n", header)
 	recType := RecordType(header[0])
 	keyLen := binary.LittleEndian.Uint32(header[1:5])
-	valLen := binary.LittleEndian.Uint32(header[6:9])
+	valLen := binary.LittleEndian.Uint32(header[5:9])
 	storedChecksum := binary.LittleEndian.Uint32(header[9:13])
+	fmt.Printf("storedChecksum: %v\n", storedChecksum)
 
 	// read key
 	key := make([]byte, keyLen)
@@ -104,6 +108,7 @@ func DecodeRecord(r io.Reader) (Record, error) {
 	h.Write(key)
 	h.Write(val)
 	computedChecksum := h.Sum32()
+	fmt.Printf("computedChecksum: %v\n", computedChecksum)
 
 	if computedChecksum != storedChecksum {
 		return Record{}, fmt.Errorf("checksum mismatch: stored %08x, computed %08x", storedChecksum, computedChecksum)
